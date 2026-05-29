@@ -94,6 +94,29 @@ bun run lint:ext        # web-ext lint against dist/
 warning about `/background/service_worker`. That's expected — see
 [ADR-0001](docs/adr/0001-dual-key-background-manifest.md).
 
+## Release
+
+1. Bump the version in `public/manifest.json` and `package.json`
+   (keep both in sync). Semver — patch for bugfixes, minor for
+   features, major for breaking changes.
+2. Commit and push to `main`.
+3. In GitHub: Actions → Release → Run workflow.
+
+The workflow typechecks, lints, builds, signs and uploads the
+`.xpi` to the AMO listed channel, tags the commit `v<version>`,
+and creates a GitHub release with auto-generated notes. It refuses
+to run if the tag already exists.
+
+Updates appear on the AMO listing after Mozilla's review.
+
+One-time prerequisites:
+
+- The AMO listing exists (v1.0.0 was uploaded manually through the
+  AMO web UI).
+- Repository secrets `AMO_API_KEY` and `AMO_API_SECRET` are set
+  (generate at
+  <https://addons.mozilla.org/developers/addon/api/key>).
+
 ## Project layout
 
 - [`CONTEXT.md`](CONTEXT.md) — domain glossary (Page, Link, Summon,
