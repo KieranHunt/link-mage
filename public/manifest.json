@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "link-mage",
+  "version": "1.0.0",
+  "description": "Summon ✨ magical links ✨",
+  "permissions": ["activeTab", "scripting", "clipboardWrite"],
+  "icons": {
+    "48": "icons/icon-default.png",
+    "96": "icons/icon-default-96.png",
+    "128": "icons/icon-default-128.png"
+  },
+  "background": {
+    "scripts": ["background.js"],
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_icon": {
+      "48": "icons/icon-default.png"
+    },
+    "default_title": "Summon a ✨ magical link ✨"
+  },
+  "commands": {
+    "summon": {
+      "suggested_key": {
+        "default": "Alt+Shift+L"
+      },
+      "description": "Summon a magical link"
+    }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "link-mage@kieran.casa",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  }
+}
