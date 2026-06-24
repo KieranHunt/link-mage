@@ -75,6 +75,7 @@ jobs:
           bunx web-ext sign \
             --source-dir dist \
             --channel=listed \
+            --approval-timeout=0 \
             --api-key "${AMO_API_KEY}" \
             --api-secret "${AMO_API_SECRET}" \
             --upload-source-code "web-ext-artifacts/link-mage-source-${{ steps.version.outputs.value }}.zip" \
