@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
   "name": "link-mage",
-  "version": "1.0.0",
+  "version": "2026.6.2409.4115",
+  "version_name": "2026-06-24T09:41:15Z",
   "description": "Summon ✨ magical links ✨",
   "permissions": ["activeTab", "scripting", "clipboardWrite"],
   "icons": {
