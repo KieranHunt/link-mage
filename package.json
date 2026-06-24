@@ -26,7 +26,7 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@types/chrome": "^0.0.270",
-    "concurrently": "^10.0.0",
+    "concurrently": "^10.0.3",
     "typescript": "^6.0.3",
     "web-ext": "^8.3.0"
   },
