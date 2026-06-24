@@ -1,14 +1,19 @@
-# Manual AMO release workflow.
+# Manual extension release workflow.
 #
 # Triggered from the Actions tab ("Run workflow"). Generates a UTC
 # timestamp version, writes it to public/manifest.json and package.json,
-# builds, then signs/uploads the .xpi to the AMO listed channel.
+# builds, then signs/uploads the .xpi to the AMO listed channel and
+# uploads/publishes the extension zip to the Chrome Web Store public listing.
 #
 # Prerequisites:
 #   - The AMO listing for link-mage already exists (v1.0.0 was uploaded
 #     manually through the AMO web UI to create the listing).
 #   - Repository secrets AMO_API_KEY and AMO_API_SECRET are set
 #     (https://addons.mozilla.org/developers/addon/api/key).
+#   - The Chrome Web Store listing for link-mage already exists.
+#   - Repository secrets CHROME_CLIENT_ID, CHROME_CLIENT_SECRET,
+#     CHROME_REFRESH_TOKEN, and CHROME_PUBLISHER_ID are set
+#     (https://github.com/fregante/chrome-webstore-upload-keys).
 name: Release
 
 on:
@@ -52,6 +57,14 @@ jobs:
       - name: Package source zip for AMO review
         run: bun run package:source
 
+      - name: Package Chrome Web Store zip
+        run: |
+          bunx web-ext build \
+            --source-dir dist \
+            --artifacts-dir web-ext-artifacts \
+            --filename "link-mage-chrome-${{ steps.version.outputs.value }}.zip" \
+            --overwrite-dest
+
       - name: Commit release version
         env:
           BRANCH: ${{ github.ref_name }}
@@ -80,3 +93,15 @@ jobs:
             --api-secret "${AMO_API_SECRET}" \
             --upload-source-code "web-ext-artifacts/link-mage-source-${{ steps.version.outputs.value }}.zip" \
             --artifacts-dir web-ext-artifacts
+
+      - name: Upload and publish to Chrome Web Store
+        env:
+          EXTENSION_ID: ijfjlfainigeeepcnjnpkngdgdnajdkl
+          CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
+        run: |
+          bunx --package chrome-webstore-upload-cli@4.0.1 chrome-webstore-upload \
+            --source "web-ext-artifacts/link-mage-chrome-${{ steps.version.outputs.value }}.zip" \
+            --extension-id "${EXTENSION_ID}"
