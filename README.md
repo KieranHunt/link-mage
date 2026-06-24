@@ -102,7 +102,7 @@ warning about `/background/service_worker`. That's expected — see
 2. Commit and push to `main`.
 3. In GitHub: Actions → Release → Run workflow.
 
-The workflow typechecks, lints, builds, signs and uploads the
+The workflow typechecks, builds, lints, signs and uploads the
 `.xpi` to the AMO listed channel, tags the commit `v<version>`,
 and creates a GitHub release with auto-generated notes. It refuses
 to run if the tag already exists.

@@ -35,11 +35,11 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
-      - name: Lint extension
-        run: bun run lint:ext
-
       - name: Build
         run: bun run build
+
+      - name: Lint extension
+        run: bun run lint:ext
 
       - name: Read version from manifest
         id: version
