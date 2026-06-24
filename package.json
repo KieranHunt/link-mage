@@ -7,11 +7,11 @@
   "scripts": {
     "build:static": "rm -rf dist && mkdir -p dist && cp -r public/. dist/",
     "build:bg": "bun build src/background.ts --outdir dist --target=browser",
-    "build:cs": "bun build src/copy-link.ts --outdir dist --target=browser --format=iife",
+    "build:cs": "bun build src/copy-link.ts --outdir dist --target=browser --format=iife --conditions=worker",
     "build:js": "bun run build:bg && bun run build:cs",
     "build": "bun run build:static && bun run build:js",
     "watch:bg": "bun build src/background.ts --outdir dist --target=browser --watch",
-    "watch:cs": "bun build src/copy-link.ts --outdir dist --target=browser --format=iife --watch",
+    "watch:cs": "bun build src/copy-link.ts --outdir dist --target=browser --format=iife --conditions=worker --watch",
     "watch": "concurrently --names bg,cs --kill-others 'bun run watch:bg' 'bun run watch:cs'",
     "dev:firefox": "bun run build && concurrently --names watch,firefox --kill-others 'bun run watch' 'bunx web-ext run --source-dir dist'",
     "dev:chromium": "bun run build && concurrently --names watch,chromium --kill-others 'bun run watch' 'bunx web-ext run --source-dir dist --target chromium'",
@@ -28,5 +28,8 @@
     "concurrently": "^10.0.0",
     "typescript": "^5.6.0",
     "web-ext": "^8.3.0"
+  },
+  "dependencies": {
+    "mdast-util-to-markdown": "^2.1.2"
   }
 }

@@ -11,6 +11,7 @@
 // docs/adr/0003-bundled-content-script-and-transformer-pipeline.md for
 // the bundled-content-script architecture.
 
+import { toMarkdown } from "mdast-util-to-markdown";
 import { runPipeline } from "./transformers.js";
 
 function escapeHtml(s: string): string {
@@ -21,13 +22,18 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function escapeMd(s: string): string {
-  return s.replace(/\\/g, "\\\\").replace(/[\[\]]/g, "\\$&");
-}
-
 function copyLink(): boolean {
   const link = runPipeline();
-  const markdownForm = `[${escapeMd(link.text)}](${link.url})`;
+  const markdownForm = toMarkdown({
+    type: "paragraph",
+    children: [
+      {
+        type: "link",
+        url: link.url,
+        children: [{ type: "text", value: link.text }],
+      },
+    ],
+  }).trimEnd();
   const richTextForm = `<a href="${escapeHtml(link.url)}">${escapeHtml(link.text)}</a>`;
 
   let didCopy = false;
