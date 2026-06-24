@@ -16,6 +16,7 @@
     "dev:firefox": "bun run build && concurrently --names watch,firefox --kill-others 'bun run watch' 'bunx web-ext run --source-dir dist'",
     "dev:chromium": "bun run build && concurrently --names watch,chromium --kill-others 'bun run watch' 'bunx web-ext run --source-dir dist --target chromium'",
     "dev": "bun run build && concurrently --names watch,firefox,chromium --kill-others 'bun run watch' 'bunx web-ext run --source-dir dist' 'bunx web-ext run --source-dir dist --target chromium'",
+    "prepare-release": "bun scripts/prepare-release.ts",
     "typecheck": "tsc --noEmit",
     "lint:ext": "bunx web-ext lint --source-dir dist",
     "package": "bun run build && bunx web-ext build --source-dir dist --artifacts-dir web-ext-artifacts --filename=link-mage-{version}.xpi --overwrite-dest",

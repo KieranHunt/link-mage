@@ -1,18 +1,14 @@
-# Manual release workflow.
+# Manual AMO release workflow.
 #
-# Triggered from the Actions tab ("Run workflow"). Reads the version
-# from public/manifest.json, builds and signs/uploads the .xpi to the
-# AMO listed channel, then tags the commit and creates a GitHub release
-# with auto-generated notes.
+# Triggered from the Actions tab ("Run workflow"). Generates a UTC
+# timestamp version, writes it to public/manifest.json and package.json,
+# builds, then signs/uploads the .xpi to the AMO listed channel.
 #
 # Prerequisites:
 #   - The AMO listing for link-mage already exists (v1.0.0 was uploaded
 #     manually through the AMO web UI to create the listing).
 #   - Repository secrets AMO_API_KEY and AMO_API_SECRET are set
 #     (https://addons.mozilla.org/developers/addon/api/key).
-#   - public/manifest.json has been bumped to a NEW version number that
-#     hasn't been uploaded before. AMO rejects re-uploads of an
-#     existing version.
 name: Release
 
 on:
@@ -32,6 +28,18 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Prepare release version
+        run: bun run prepare-release
+
+      - name: Read release version
+        id: version
+        run: |
+          version=$(jq -r .version public/manifest.json)
+          version_name=$(jq -r .version_name public/manifest.json)
+          echo "value=${version}" >> "$GITHUB_OUTPUT"
+          echo "name=${version_name}" >> "$GITHUB_OUTPUT"
+          echo "Releasing v${version} (${version_name})"
+
       - name: Typecheck
         run: bun run typecheck
 
@@ -41,23 +49,23 @@ jobs:
       - name: Lint extension
         run: bun run lint:ext
 
-      - name: Read version from manifest
-        id: version
-        run: |
-          version=$(jq -r .version public/manifest.json)
-          echo "value=${version}" >> "$GITHUB_OUTPUT"
-          echo "Releasing v${version}"
-
-      - name: Refuse to release if tag already exists
-        run: |
-          tag="v${{ steps.version.outputs.value }}"
-          if git rev-parse --verify "refs/tags/${tag}" >/dev/null 2>&1; then
-            echo "Tag ${tag} already exists. Bump public/manifest.json to a new version before releasing."
-            exit 1
-          fi
-
       - name: Package source zip for AMO review
         run: bun run package:source
+
+      - name: Commit release version
+        env:
+          BRANCH: ${{ github.ref_name }}
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/manifest.json package.json
+          if git diff --cached --quiet; then
+            echo "No release version changes to commit."
+            exit 1
+          fi
+          git commit -m "Release v${VERSION}"
+          git push origin "HEAD:${BRANCH}"
 
       - name: Sign and upload to AMO (listed channel)
         env:
@@ -71,12 +79,3 @@ jobs:
             --api-secret "${AMO_API_SECRET}" \
             --upload-source-code "web-ext-artifacts/link-mage-source-${{ steps.version.outputs.value }}.zip" \
             --artifacts-dir web-ext-artifacts
-
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.version.outputs.value }}
-          name: v${{ steps.version.outputs.value }}
-          generate_release_notes: true
-          files: |
-            web-ext-artifacts/link-mage-source-${{ steps.version.outputs.value }}.zip

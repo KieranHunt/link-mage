@@ -69,8 +69,8 @@ Output lands in `dist/`:
 ### Package for distribution
 
 ```sh
-bun run package         # produces web-ext-artifacts/link-mage-1.0.0.xpi
-bun run package:source  # produces web-ext-artifacts/link-mage-source-1.0.0.zip
+bun run package         # produces web-ext-artifacts/link-mage-<version>.xpi
+bun run package:source  # produces web-ext-artifacts/link-mage-source-<version>.zip
 ```
 
 The `.xpi` is what gets uploaded to AMO. The source zip is what AMO's
@@ -96,16 +96,17 @@ warning about `/background/service_worker`. That's expected — see
 
 ## Release
 
-1. Bump the version in `public/manifest.json` and `package.json`
-   (keep both in sync). Semver — patch for bugfixes, minor for
-   features, major for breaking changes.
-2. Commit and push to `main`.
-3. In GitHub: Actions → Release → Run workflow.
+1. Commit and push changes to `main`.
+2. In GitHub: Actions → Release → Run workflow.
 
-The workflow typechecks, builds, lints, signs and uploads the
-`.xpi` to the AMO listed channel, tags the commit `v<version>`,
-and creates a GitHub release with auto-generated notes. It refuses
-to run if the tag already exists.
+The workflow generates a UTC timestamp extension version, writes it to
+`public/manifest.json` and `package.json`, typechecks, builds, lints,
+packages the AMO source zip, commits the generated version to `main`,
+then signs and uploads the `.xpi` to the AMO listed channel.
+
+The manifest `version` uses `YYYY.M.DDHH.MMSS`, for example
+`2026.6.2409.5925`. The manifest `version_name` stores the matching ISO
+UTC timestamp, for example `2026-06-24T09:59:25Z`.
 
 Updates appear on the AMO listing after Mozilla's review.
 
