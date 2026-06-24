@@ -29,9 +29,8 @@ YouTube's `(69) ` unread-notification prefix from watch-page titles.
 
 - **Firefox** — install from
   [addons.mozilla.org/firefox/addon/link-mage](https://addons.mozilla.org/firefox/addon/link-mage/).
-- **Chrome / Chromium** — not yet published; build from source (see
-  below) and load `dist/` as an unpacked extension via
-  `chrome://extensions`.
+- **Chrome / Chromium** — install from
+  [chromewebstore.google.com/detail/link-mage/ijfjlfainigeeepcnjnpkngdgdnajdkl](https://chromewebstore.google.com/detail/link-mage/ijfjlfainigeeepcnjnpkngdgdnajdkl).
 
 ## Use
 
