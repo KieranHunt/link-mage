@@ -1,9 +1,9 @@
 # Verify workflow: runs on every pull request with no path filters,
 # giving every PR the checks the merge gate will rely on. A merge job
-# then states the maintainer's next action on every Dependabot PR that
-# will not auto-merge — a comment with the reason plus an assignee
-# (docs/adr/0004). It never merges in this slice; auto-merge for green,
-# eligible Dependabot PRs is a later slice.
+# then auto-merges or flags every Dependabot PR (docs/adr/0004): a
+# green PR whose changes stay within the manifest and lockfile is
+# squash-merged silently; any other PR gets a comment with the reason
+# plus an assignee.
 #
 # The build's dist/ output is required for the extension lint, so
 # lint:ext runs after build.
@@ -46,16 +46,20 @@ jobs:
       - name: Lint extension
         run: bun run lint:ext
 
-  # Merge gate, reject half (docs/adr/0004): runs after verify on
-  # Dependabot PRs only. Gated on the PR's user login rather than the
-  # run's actor so manual re-runs still get a verdict. Serialized
-  # concurrency keeps verdicts on the same PR from racing.
+  # Merge gate (docs/adr/0004): runs after verify on Dependabot PRs
+  # only. Gated on the PR's user login rather than the run's actor so
+  # manual re-runs still get a verdict. Serialized concurrency keeps
+  # verdicts on the same PR from racing.
   #
   # A red or ineligible PR gets exactly one comment per reason per head
   # (a hidden marker makes re-runs and re-pushes idempotent) and an
-  # assignee. Verify green + eligible changes: silent, exit 0 — merging
-  # is a later slice. The job's own failure (e.g. a GitHub API error)
-  # is a distinct failure and must not be read as "verify not green".
+  # assignee. A green, eligible PR is squash-merged with branch deletion,
+  # silently — no comment, no assignment. The head is re-read from the
+  # API at merge time and must still match the head the verdict was made
+  # against, so a PR updated between verdict and merge aborts unmerged
+  # (the new head's own merge run handles it). The job's own failure
+  # (e.g. a GitHub API error) is a distinct failure and must not be read
+  # as "verify not green".
   merge:
     runs-on: ubuntu-latest
     needs: verify
@@ -72,7 +76,7 @@ jobs:
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       VERIFY_RESULT: ${{ needs.verify.result }}
     steps:
-      - name: Comment and assign when the PR will not auto-merge
+      - name: Squash-merge eligible green Dependabot PRs, otherwise comment and assign
         run: |
           set -euo pipefail
 
@@ -121,4 +125,14 @@ jobs:
             exit 0
           fi
 
-          echo "Verify is green and changes are limited to ${allowed}; nothing to do in this slice."
+          current_head="$(gh pr view "${PR_NUMBER}" --json headRefOid --jq .headRefOid)"
+          if [ "${current_head}" != "${HEAD_SHA}" ]; then
+            echo "Head moved from ${HEAD_SHA} to ${current_head} since the verdict; aborting merge without comment or assignment. The new head's own merge run handles it."
+            exit 0
+          fi
+
+          # --match-head-commit re-checks the head at merge time; the
+          # explicit comparison above just makes any residual race
+          # self-explanatory in the run log.
+          gh pr merge "${PR_NUMBER}" --squash --delete-branch --match-head-commit "${current_head}"
+          echo "Squash-merged #${PR_NUMBER} at ${current_head} and deleted the branch; silent on the PR."
