@@ -1,5 +1,9 @@
 # Verify workflow: runs on every pull request with no path filters,
-# giving every PR the checks the merge gate will rely on.
+# giving every PR the checks the merge gate will rely on. A merge job
+# then states the maintainer's next action on every Dependabot PR that
+# will not auto-merge — a comment with the reason plus an assignee
+# (docs/adr/0004). It never merges in this slice; auto-merge for green,
+# eligible Dependabot PRs is a later slice.
 #
 # The build's dist/ output is required for the extension lint, so
 # lint:ext runs after build.
@@ -41,3 +45,80 @@ jobs:
 
       - name: Lint extension
         run: bun run lint:ext
+
+  # Merge gate, reject half (docs/adr/0004): runs after verify on
+  # Dependabot PRs only. Gated on the PR's user login rather than the
+  # run's actor so manual re-runs still get a verdict. Serialized
+  # concurrency keeps verdicts on the same PR from racing.
+  #
+  # A red or ineligible PR gets exactly one comment per reason per head
+  # (a hidden marker makes re-runs and re-pushes idempotent) and an
+  # assignee. Verify green + eligible changes: silent, exit 0 — merging
+  # is a later slice. The job's own failure (e.g. a GitHub API error)
+  # is a distinct failure and must not be read as "verify not green".
+  merge:
+    runs-on: ubuntu-latest
+    needs: verify
+    if: always() && github.event.pull_request.user.login == 'dependabot[bot]'
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency:
+      group: merge-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      VERIFY_RESULT: ${{ needs.verify.result }}
+    steps:
+      - name: Comment and assign when the PR will not auto-merge
+        run: |
+          set -euo pipefail
+
+          allowed="package.json bun.lock"
+          assignee="KieranHunt"
+
+          # reject <reason-slug> <readable reason>: comment (once per
+          # reason per head, via the hidden marker) and assign. The
+          # comment bodies are captured before grep so pagination
+          # can't SIGPIPE a pipefail pipeline into the wrong branch.
+          reject() {
+            local reason="$1"
+            local readable="$2"
+            local marker="<!-- link-mage-merge-gate: ${reason} ${HEAD_SHA} -->"
+
+            bodies="$(gh api --paginate \
+              "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+              --jq '.[].body')"
+            if grep --fixed-strings --quiet "${marker}" <<<"${bodies}"; then
+              echo "Comment for ${reason} already exists; not posting again."
+            else
+              gh pr comment "${PR_NUMBER}" --body "${marker}
+
+          ${readable}
+
+          This Dependabot PR will not auto-merge and needs human triage; assigning @${assignee}."
+            fi
+            gh pr edit "${PR_NUMBER}" --add-assignee "${assignee}"
+          }
+
+          # Verdict order: red wins over ineligibility.
+          if [ "${VERIFY_RESULT}" != "success" ]; then
+            reject verify-not-green \
+              "The verify job is not green (result: ${VERIFY_RESULT})."
+            exit 0
+          fi
+
+          changed="$(gh pr view "${PR_NUMBER}" --json files --jq '.files[].path')"
+          outside="$(comm -13 \
+            <(tr ' ' '\n' <<<"${allowed}" | sort) \
+            <(printf '%s\n' "${changed}" | sort))"
+          if [ -n "${outside}" ]; then
+            reject ineligible-changes \
+              "This PR changes files beyond the manifest and lockfile:
+          $(awk '{ print "- " $0 }' <<<"${outside}")"
+            exit 0
+          fi
+
+          echo "Verify is green and changes are limited to ${allowed}; nothing to do in this slice."
