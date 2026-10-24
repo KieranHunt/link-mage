@@ -29,7 +29,7 @@
     "@types/chrome": "^0.3.5",
     "concurrently": "^10.0.6",
     "typescript": "^6.0.3",
-    "web-ext": "^8.3.0"
+    "web-ext": "^10.7.0"
   },
   "dependencies": {
     "mdast-util-to-markdown": "^2.2.0"
