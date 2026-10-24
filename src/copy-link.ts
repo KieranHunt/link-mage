@@ -11,30 +11,13 @@
 // docs/adr/0003-bundled-content-script-and-transformer-pipeline.md for
 // the bundled-content-script architecture.
 
-import { toMarkdown } from "mdast-util-to-markdown";
+import { renderMarkdownForm, renderRichTextForm } from "./render.js";
 import { runPipeline } from "./transformers.js";
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
 
 function copyLink(): boolean {
   const link = runPipeline();
-  const markdownForm = toMarkdown({
-    type: "paragraph",
-    children: [
-      {
-        type: "link",
-        url: link.url,
-        children: [{ type: "text", value: link.text }],
-      },
-    ],
-  }).trimEnd();
-  const richTextForm = `<a href="${escapeHtml(link.url)}">${escapeHtml(link.text)}</a>`;
+  const markdownForm = renderMarkdownForm(link);
+  const richTextForm = renderRichTextForm(link);
 
   let didCopy = false;
   const onCopy = (event: ClipboardEvent): void => {

@@ -21,6 +21,7 @@
     "lint:ext": "bunx web-ext lint --source-dir dist",
     "package": "bun run build && bunx web-ext build --source-dir dist --artifacts-dir web-ext-artifacts --filename=link-mage-{version}.xpi --overwrite-dest",
     "package:source": "bash scripts/package-source.sh",
+    "test": "bun test",
     "icons": "bash scripts/generate-icons.sh"
   },
   "devDependencies": {
