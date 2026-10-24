@@ -1,0 +1,43 @@
+# Verify workflow: runs on every pull request with no path filters,
+# giving every PR the checks the merge gate will rely on.
+#
+# The build's dist/ output is required for the extension lint, so
+# lint:ext runs after build.
+name: Verify
+
+on:
+  pull_request:
+
+permissions: {}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    concurrency:
+      group: verify-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      # actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      # jdx/mise-action@v4.3.0
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c
+        with:
+          cache: false
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Test
+        run: bun test
+
+      - name: Build
+        run: bun run build
+
+      - name: Lint extension
+        run: bun run lint:ext
