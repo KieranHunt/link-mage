@@ -72,8 +72,10 @@ jobs:
       cancel-in-progress: false
     env:
       GITHUB_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      HEAD_REF: ${{ github.event.pull_request.head.ref }}
       VERIFY_RESULT: ${{ needs.verify.result }}
     steps:
       - name: Squash-merge eligible green Dependabot PRs, otherwise comment and assign
@@ -131,8 +133,15 @@ jobs:
             exit 0
           fi
 
-          # --match-head-commit re-checks the head at merge time; the
-          # explicit comparison above just makes any residual race
-          # self-explanatory in the run log.
-          gh pr merge "${PR_NUMBER}" --squash --delete-branch --match-head-commit "${current_head}"
+          # The job checks out nothing (gh only), so gh cannot resolve the
+          # repo from a git remote: GH_REPO in env pins it, and the merge
+          # and branch deletion go through the REST API via gh api — the
+          # `sha` field rejects a head that moved, same guard as the
+          # explicit comparison above.
+          gh api --method PUT \
+            "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/merge" \
+            --field merge_method=squash \
+            --field sha="${current_head}"
+          gh api --method DELETE \
+            "repos/${GITHUB_REPOSITORY}/git/refs/heads/${HEAD_REF}"
           echo "Squash-merged #${PR_NUMBER} at ${current_head} and deleted the branch; silent on the PR."
