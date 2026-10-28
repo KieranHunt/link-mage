@@ -26,10 +26,10 @@
   },
   "devDependencies": {
     "@types/bun": "^1.4.3",
-    "@types/chrome": "^0.3.5",
+    "@types/chrome": "^0.3.6",
     "concurrently": "^10.0.6",
     "typescript": "^6.0.3",
-    "web-ext": "^10.7.0"
+    "web-ext": "^10.8.0"
   },
   "dependencies": {
     "mdast-util-to-markdown": "^2.2.0"
