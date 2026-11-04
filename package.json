@@ -25,13 +25,13 @@
     "icons": "bash scripts/generate-icons.sh"
   },
   "devDependencies": {
-    "@types/bun": "^1.4.3",
-    "@types/chrome": "^0.3.6",
+    "@types/bun": "^1.4.4",
+    "@types/chrome": "^0.3.7",
     "concurrently": "^10.0.6",
     "typescript": "^6.0.3",
     "web-ext": "^10.8.0"
   },
   "dependencies": {
-    "mdast-util-to-markdown": "^2.2.0"
+    "mdast-util-to-markdown": "^2.2.1"
   }
 }
