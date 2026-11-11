@@ -32,6 +32,6 @@
     "web-ext": "^10.8.0"
   },
   "dependencies": {
-    "mdast-util-to-markdown": "^2.2.1"
+    "mdast-util-to-markdown": "^2.2.2"
   }
 }
